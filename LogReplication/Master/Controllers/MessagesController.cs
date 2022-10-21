@@ -1,3 +1,4 @@
+using Common;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Master.Controllers
@@ -6,19 +7,25 @@ namespace Master.Controllers
     [Route("[controller]")]
     public class MessagesController : ControllerBase
     {
+        private readonly MessageService _messageService;
         private readonly ILogger<MessagesController> _logger;
 
-        public MessagesController(ILogger<MessagesController> logger)
+        public MessagesController(MessageService messageService, ILogger<MessagesController> logger)
         {
+            _messageService = messageService;
             _logger = logger;
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IAsyncEnumerable<string> Get()
         {
-            _logger.LogDebug("Getting all the messages");
+            return _messageService.GetMessages();
+        }
 
-            return new string[] { "Static", "Messages" };
+        [HttpPost]
+        public Task Post([FromForm] string message, [FromForm] int index)
+        {
+            return _messageService.InsertMessageAsync(index, message);
         }
     }
 }
