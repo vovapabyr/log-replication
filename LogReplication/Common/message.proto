@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+option csharp_namespace = "Common";
+
+service MessageService {
+  // Inserts new message
+  rpc InsertMessage (Message) returns (Response);
+}
+
+message Message {
+	int32 index = 1;
+	string value = 2;
+}
+
+message Response {}
