@@ -1,20 +1,19 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Collections.Generic;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Common
 {
-    public class MessageService 
+    public class MessageStore 
     {
         private readonly List<string> _messages = new List<string>(100);
 
         private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1); 
 
-        private ILogger<MessageService> _logger;
+        private ILogger<MessageStore> _logger;
 
-        public MessageService(ILogger<MessageService> logger)
+        public MessageStore(ILogger<MessageStore> logger)
         {
             _logger = logger;
         }
