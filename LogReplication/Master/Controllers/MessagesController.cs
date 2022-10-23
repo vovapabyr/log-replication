@@ -21,7 +21,7 @@ namespace Master.Controllers
         [HttpGet]
         public IAsyncEnumerable<string> Get()
         {
-            return _messageService.GetMessages();
+            return _messageService.GetMessagesAsync();
         }
 
         [HttpPost]

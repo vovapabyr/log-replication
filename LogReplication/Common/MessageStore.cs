@@ -41,8 +41,13 @@ namespace Common
             {
                 _logger.LogDebug("Waiting message {message} to insert at {index}.", message, messageIndex);
                 await _semaphoreSlim.WaitAsync();
-                EnsureSize(messageIndex);
-                _messages[messageIndex] = message;
+                if (_messages.Count == messageIndex)
+                    _messages.Add(message);
+                else
+                {
+                    EnsureSize(messageIndex);
+                    _messages[messageIndex] = message;
+                }
                 _logger.LogInformation("Message {message} inserted at {index}.", message, messageIndex);
             }
             finally 
@@ -52,7 +57,7 @@ namespace Common
             }            
         }
 
-        public async IAsyncEnumerable<string> GetMessages() 
+        public async IAsyncEnumerable<string> GetMessagesAsync() 
         {
             try 
             {
