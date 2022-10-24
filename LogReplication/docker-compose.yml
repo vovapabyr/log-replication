@@ -13,3 +13,14 @@ services:
       context: .
       dockerfile: Secondary/Dockerfile
 
+  secondary1:
+    image: ${DOCKER_REGISTRY-}secondary
+    build:
+      context: .
+      dockerfile: Secondary/Dockerfile
+
+  secondary2:
+    image: ${DOCKER_REGISTRY-}secondary
+    build:
+      context: .
+      dockerfile: Secondary/Dockerfile

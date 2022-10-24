@@ -1,18 +1,26 @@
 using Common;
+using Master.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
 builder.Services.AddSingleton<MessageStore>();
+builder.Services.AddSingleton<SecondaryClientsFactory>();
 builder.Services.AddControllers();
-builder.Services.AddGrpcClient<MessageService.MessageServiceClient>(o =>
+
+
+var secondaries = builder.Configuration.GetSection("Secondaries").Get<string[]>();
+foreach (var sec in secondaries)
 {
-    o.Address = new Uri("https://secondary:443");
-}).ConfigureChannel(c => 
-{
-    c.HttpHandler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator };
-});
+    builder.Services.AddGrpcClient<MessageService.MessageServiceClient>(sec, o =>
+    {
+        o.Address = new Uri($"https://{sec}:443");
+    }).ConfigureChannel(c =>
+    {
+        c.HttpHandler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator };
+    });
+}
 
 var app = builder.Build();
 

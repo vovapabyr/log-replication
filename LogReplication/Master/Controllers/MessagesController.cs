@@ -1,4 +1,5 @@
 using Common;
+using Master.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Master.Controllers
@@ -8,13 +9,13 @@ namespace Master.Controllers
     public class MessagesController : ControllerBase
     {
         private readonly MessageStore _messageService;
-        private readonly IEnumerable<MessageService.MessageServiceClient> _secondaryClients;
+        private readonly SecondaryClientsFactory _clientsFactory;
         private readonly ILogger<MessagesController> _logger;
 
-        public MessagesController(MessageStore messageService, IEnumerable<MessageService.MessageServiceClient> secondaryClients, ILogger<MessagesController> logger)
+        public MessagesController(MessageStore messageService, SecondaryClientsFactory clientsFactory, ILogger<MessagesController> logger)
         {
             _messageService = messageService;
-            _secondaryClients = secondaryClients;
+            _clientsFactory = clientsFactory;
             _logger = logger;
         }
 
@@ -35,7 +36,7 @@ namespace Master.Controllers
         private Task ForwardMessageToSecondaries(int messageIndex, string message) 
         {
             var forwardMessageTasks = new List<Task>();
-            foreach (var secondaryClient in _secondaryClients)
+            foreach (var secondaryClient in _clientsFactory.GetSecondariesClients())
                 forwardMessageTasks.Add(secondaryClient.InsertMessageAsync(new Message() { Index = messageIndex, Value = message }).ResponseAsync);
 
             return Task.WhenAll(forwardMessageTasks);
