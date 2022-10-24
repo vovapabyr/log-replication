@@ -9,6 +9,9 @@ builder.Services.AddControllers();
 builder.Services.AddGrpcClient<MessageService.MessageServiceClient>(o =>
 {
     o.Address = new Uri("https://secondary:443");
+}).ConfigureChannel(c => 
+{
+    c.HttpHandler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator };
 });
 
 var app = builder.Build();
