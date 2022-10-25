@@ -57,7 +57,18 @@
 			"name": "Secondary GET",
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "https://localhost:51980/messages",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "51980",
+					"path": [
+						"messages"
+					]
+				}
 			},
 			"response": []
 		},
@@ -65,7 +76,18 @@
 			"name": "Secondary1 GET",
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "https://localhost:51982/messages",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "51982",
+					"path": [
+						"messages"
+					]
+				}
 			},
 			"response": []
 		},
@@ -73,7 +95,18 @@
 			"name": "Secondary2 GET",
 			"request": {
 				"method": "GET",
-				"header": []
+				"header": [],
+				"url": {
+					"raw": "https://localhost:51984/messages",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "51984",
+					"path": [
+						"messages"
+					]
+				}
 			},
 			"response": []
 		}
