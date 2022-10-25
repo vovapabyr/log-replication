@@ -9,13 +9,13 @@ namespace Master.Controllers
     public class MessagesController : ControllerBase
     {
         private readonly MessageStore _messageService;
-        private readonly SecondaryClientsFactory _clientsFactory;
+        private readonly SecondaryMessagesService _secondaryMessagesService;
         private readonly ILogger<MessagesController> _logger;
 
-        public MessagesController(MessageStore messageService, SecondaryClientsFactory clientsFactory, ILogger<MessagesController> logger)
+        public MessagesController(MessageStore messageService, SecondaryMessagesService secondaryMessagesService, ILogger<MessagesController> logger)
         {
             _messageService = messageService;
-            _clientsFactory = clientsFactory;
+            _secondaryMessagesService = secondaryMessagesService;
             _logger = logger;
         }
 
@@ -26,20 +26,10 @@ namespace Master.Controllers
         }
 
         [HttpPost]
-        public async Task Post([FromForm] string message, [FromForm]int delay)
+        public async Task Post([FromForm] string message)
         {            
             var messageIndex = await _messageService.AddMessageAsync(message);
-            Thread.Sleep(delay);
-            await ForwardMessageToSecondaries(messageIndex, message);
-        }
-
-        private Task ForwardMessageToSecondaries(int messageIndex, string message) 
-        {
-            var forwardMessageTasks = new List<Task>();
-            foreach (var secondaryClient in _clientsFactory.GetSecondariesClients())
-                forwardMessageTasks.Add(secondaryClient.InsertMessageAsync(new Message() { Index = messageIndex, Value = message }).ResponseAsync);
-
-            return Task.WhenAll(forwardMessageTasks);
+            await _secondaryMessagesService.ForwardMessageAsync(messageIndex, message);
         }
     }
 }

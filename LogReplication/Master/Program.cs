@@ -6,7 +6,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 
 builder.Services.AddSingleton<MessageStore>();
-builder.Services.AddSingleton<SecondaryClientsFactory>();
+builder.Services.AddSingleton<SecondaryMessagesService>();
 builder.Services.AddControllers();
 
 
