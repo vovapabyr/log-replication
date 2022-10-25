@@ -28,5 +28,4 @@ To configure a new secondary:
   3. Go to Master appsettings.json and add new container_name to Secondaries array. Note container_name defined in 1. should match the one you add to Secondaries            array.
 
 ## How to run
-   * Build: docker-compose -f "docker-compose.yml" -f "docker-compose.override.yml" build
    * Run: docker-compose -f "docker-compose.yml" -f "docker-compose.override.yml" up
