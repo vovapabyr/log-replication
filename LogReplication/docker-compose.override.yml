@@ -15,6 +15,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
+      - WriteDelay=0
     ports:
       - "51981:80"
       - "51980:443"
@@ -26,6 +27,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
+      - WriteDelay=0
     ports:
       - "51983:80"
       - "51982:443"
@@ -37,6 +39,7 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ASPNETCORE_URLS=https://+:443;http://+:80
+      - WriteDelay=3000
     ports:
       - "51985:80"
       - "51984:443"
