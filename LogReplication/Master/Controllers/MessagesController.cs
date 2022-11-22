@@ -1,6 +1,7 @@
 using Common;
 using Master.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Net;
 
 namespace Master.Controllers
 {
@@ -26,11 +27,16 @@ namespace Master.Controllers
         }
 
         [HttpPost]
-        public async Task Post([FromForm] string message, [FromForm] int writeConcern)
-        {            
+        public async Task<ActionResult> Post([FromForm] string message, [FromForm] int writeConcern)
+        {
+            if (writeConcern < 0)
+                return BadRequest("Invalid write concern. Write concern should be greater than 0.");
+
             _logger.LogInformation("START MESSAGE '{message}' BROADCAST. Write concern '{writeConcern}'.", message, writeConcern);            
             await _messageBroadcastService.BroadcastMessageAsync(message, writeConcern);
             _logger.LogInformation("END MESSAGE '{message}' BROADCAST.", message);
+
+            return StatusCode((int)HttpStatusCode.Created);
         }
     }
 }
