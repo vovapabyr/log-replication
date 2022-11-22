@@ -1,5 +1,6 @@
 ﻿using Common;
 using Grpc.Net.ClientFactory;
+using Master.Extensions;
 
 namespace Master.Services
 {
@@ -20,10 +21,8 @@ namespace Master.Services
 
 
         public async Task BroadcastMessageAsync(string message, int writeConcern)
-        {
-            var messageIndex = await _messageStore.AddMessageAsync(message);
-
-            var isValidWriteConcern = writeConcern <= _secondaries.Length;
+        {                     
+            var isValidWriteConcern = writeConcern <= _secondaries.Length + 1; // secondaries + master
             if (!isValidWriteConcern) 
             {
                 _logger.LogWarning("Write concern '{writeConcern}' is bigger than number of secondaries '{secondariesCount}'. Setting write concern to 0.", writeConcern, _secondaries.Length);
@@ -33,18 +32,12 @@ namespace Master.Services
             var cde = new CountdownEvent(writeConcern);
             try 
             {
+                var nextMessageIndex = await _messageStore.GetNextIndexAsync();
+                _ = _messageStore.InsertMessageAsync(nextMessageIndex, message).ContinueWithCDESignal(message, cde, "master", _logger);
                 foreach (var (secName, secClient) in GetSecondariesClients())
                 {
                     _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);
-                    _ = secClient.InsertMessageAsync(new Message() { Index = messageIndex, Value = message }).ResponseAsync.ContinueWith(r =>
-                    {
-                        _logger.LogInformation("Message '{message}' is delivered to '{secondary}' secondary.", message, secName);
-                        if (!cde.IsSet)
-                        {
-                            cde.Signal();
-                            _logger.LogDebug("Secondary '{secondary}' signaled to CDE. CDE's current count: '{count}.", secName, cde.CurrentCount);
-                        }
-                    });
+                    _ = secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).ResponseAsync.ContinueWithCDESignal(message, cde, secName, _logger);
                 }
 
                 await Task.Run(() => cde.Wait());

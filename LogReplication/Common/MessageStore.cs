@@ -83,6 +83,19 @@ namespace Common
             }
         }
 
+        public async Task<int> GetNextIndexAsync() 
+        {
+            try
+            {
+                await _semaphoreSlim.WaitAsync();
+                return _messages.Count;
+            }
+            finally 
+            {
+                _semaphoreSlim.Release();
+            }
+        }
+
         #region private
 
         private void EnsureSize(int messageIndex)
