@@ -28,8 +28,9 @@ namespace Master.Controllers
         [HttpPost]
         public async Task Post([FromForm] string message, [FromForm] int writeConcern)
         {            
-            _logger.LogInformation("Write concern '{writeConcern}' on adding messsage '{message}'.", writeConcern, message);            
+            _logger.LogInformation("START MESSAGE '{message}' BROADCAST. Write concern '{writeConcern}'.", message, writeConcern);            
             await _messageBroadcastService.BroadcastMessageAsync(message, writeConcern);
+            _logger.LogInformation("END MESSAGE '{message}' BROADCAST.", message);
         }
     }
 }

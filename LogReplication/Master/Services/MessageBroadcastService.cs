@@ -9,6 +9,7 @@ namespace Master.Services
         private readonly MessageStore _messageStore;
         private readonly GrpcClientFactory _grpcClientFactory;
         private string[] _secondaries;
+        private readonly int _masterWriteDelay;
         private readonly ILogger<MessageBroadcastService> _logger;
 
         public MessageBroadcastService(MessageStore messageStore, GrpcClientFactory grpcClientFactory, IConfiguration configuration, ILogger<MessageBroadcastService> logger)
@@ -16,6 +17,7 @@ namespace Master.Services
             _messageStore = messageStore;
             _grpcClientFactory = grpcClientFactory;
             _secondaries = configuration.GetSection("Secondaries").Get<string[]>();
+            _masterWriteDelay = configuration.GetSection("WriteDelay").Get<int>();
             _logger = logger;
         }
 
@@ -33,7 +35,15 @@ namespace Master.Services
             try 
             {
                 var nextMessageIndex = await _messageStore.GetNextIndexAsync();
-                _ = _messageStore.InsertMessageAsync(nextMessageIndex, message).ContinueWithCDESignal(message, cde, "master", _logger);
+                _ = Task.Run(() => 
+                {
+                    if (_masterWriteDelay > 0)
+                    {
+                        _logger.LogInformation("Delaying message write to '{delay}' ms.", _masterWriteDelay);
+                        Thread.Sleep(_masterWriteDelay);
+                    }
+                    _messageStore.InsertMessageAsync(nextMessageIndex, message).ContinueWithCDESignal(message, cde, "master", _logger);
+                });
                 foreach (var (secName, secClient) in GetSecondariesClients())
                 {
                     _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);

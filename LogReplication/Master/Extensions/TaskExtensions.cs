@@ -12,7 +12,7 @@ namespace Master.Extensions
                 if (!cde.IsSet)
                 {
                     cde.Signal();
-                    logger.LogDebug("Node '{nodeName}' signaled to CDE. CDE's current count: '{count}.", nodeName, cde.CurrentCount);
+                    logger.LogInformation("Node '{nodeName}' signaled to CDE. Waiting for '{count}' more nodes to finish.", nodeName, cde.CurrentCount);
                 }
             });
         }
