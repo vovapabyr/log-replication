@@ -8,29 +8,28 @@ namespace Master.Controllers
     [Route("[controller]")]
     public class MessagesController : ControllerBase
     {
-        private readonly MessageStore _messageService;
-        private readonly SecondaryMessagesService _secondaryMessagesService;
+        private readonly MessageStore _messageStore;
+        private readonly MessageBroadcastService _messageBroadcastService;
         private readonly ILogger<MessagesController> _logger;
 
-        public MessagesController(MessageStore messageService, SecondaryMessagesService secondaryMessagesService, ILogger<MessagesController> logger)
+        public MessagesController(MessageStore messageStore, MessageBroadcastService messageBroadcastService, ILogger<MessagesController> logger)
         {
-            _messageService = messageService;
-            _secondaryMessagesService = secondaryMessagesService;
+            _messageStore = messageStore;
+            _messageBroadcastService = messageBroadcastService;
             _logger = logger;
         }
 
         [HttpGet]
         public IAsyncEnumerable<string> Get()
         {
-            return _messageService.GetMessagesAsync();
+            return _messageStore.GetMessagesAsync();
         }
 
         [HttpPost]
         public async Task Post([FromForm] string message, [FromForm] int writeConcern)
         {            
-            _logger.LogInformation("Write concern '{writeConcern}' on adding messsage '{message}'.", writeConcern, message);
-            var messageIndex = await _messageService.AddMessageAsync(message);
-            await _secondaryMessagesService.ForwardMessageAsync(messageIndex, message, writeConcern);
+            _logger.LogInformation("Write concern '{writeConcern}' on adding messsage '{message}'.", writeConcern, message);            
+            await _messageBroadcastService.BroadcastMessageAsync(message, writeConcern);
         }
     }
 }
