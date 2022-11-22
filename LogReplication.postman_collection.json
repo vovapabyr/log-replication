@@ -15,7 +15,12 @@
 					"urlencoded": [
 						{
 							"key": "message",
-							"value": "1",
+							"value": "m1",
+							"type": "default"
+						},
+						{
+							"key": "writeConcern",
+							"value": "3",
 							"type": "default"
 						}
 					]
