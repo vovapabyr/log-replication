@@ -21,7 +21,7 @@ namespace Secondary.Services
         {
             if (_writeDelay > 0) 
             {
-                _logger.LogInformation("Delaying message write to {delay} ms.", _writeDelay);
+                _logger.LogInformation("Delaying message write to '{delay}' ms.", _writeDelay);
                 Thread.Sleep(_writeDelay);
             }
             await _messageStore.InsertMessageAsync(request.Index, request.Value);

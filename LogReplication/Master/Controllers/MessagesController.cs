@@ -28,7 +28,7 @@ namespace Master.Controllers
         [HttpPost]
         public async Task Post([FromForm] string message, [FromForm] int writeConcern)
         {            
-            _logger.LogInformation("Write concern {writeConcern} on adding messsage {message}.", writeConcern, message);
+            _logger.LogInformation("Write concern '{writeConcern}' on adding messsage '{message}'.", writeConcern, message);
             var messageIndex = await _messageService.AddMessageAsync(message);
             await _secondaryMessagesService.ForwardMessageAsync(messageIndex, message, writeConcern);
         }

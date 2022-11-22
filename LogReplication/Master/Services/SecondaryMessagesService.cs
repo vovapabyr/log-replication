@@ -22,7 +22,7 @@ namespace Master.Services
             var isValidWriteConcern = writeConcern <= _secondaries.Length;
             if (!isValidWriteConcern) 
             {
-                _logger.LogWarning("Write concern {writeConcern} is bigger than number of secondaries {secondariesCount}. Setting write concern to 0.", writeConcern, _secondaries.Length);
+                _logger.LogWarning("Write concern '{writeConcern}' is bigger than number of secondaries '{secondariesCount}'. Setting write concern to 0.", writeConcern, _secondaries.Length);
                 writeConcern = 0;
             }
 
@@ -31,14 +31,14 @@ namespace Master.Services
             {
                 foreach (var (secName, secClient) in GetSecondariesClients())
                 {
-                    _logger.LogInformation("Sending message {message} to {secondary}.", message, secName);
+                    _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);
                     _ = secClient.InsertMessageAsync(new Message() { Index = messageIndex, Value = message }).ResponseAsync.ContinueWith(r =>
                     {
-                        _logger.LogInformation("Message {message} to {secondary} is delivered.", message, secName);
+                        _logger.LogInformation("Message '{message}' is delivered to '{secondary}' secondary.", message, secName);
                         if (!cde.IsSet)
                         {
                             cde.Signal();
-                            _logger.LogDebug("Secondary {secondary} signaled CDE. CDE current count: {count}.", secName, cde.CurrentCount);
+                            _logger.LogDebug("Secondary '{secondary}' signaled to CDE. CDE's current count: '{count}.", secName, cde.CurrentCount);
                         }
                     });
                 }

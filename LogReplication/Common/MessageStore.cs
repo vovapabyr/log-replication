@@ -22,15 +22,15 @@ namespace Common
         {
             try 
             {
-                _logger.LogDebug("Waiting message {message} to append.", message);
+                _logger.LogDebug("Waiting message '{message}' to append.", message);
                 await _semaphoreSlim.WaitAsync();
                 _messages.Add(message);
-                _logger.LogInformation("Message {message} appended.", message);
+                _logger.LogInformation("Message '{message}' is appended.", message);
                 return GetLastIndex();
             }
             finally 
             {
-                _logger.LogDebug("Releasing lock after {message} append.", message);
+                _logger.LogDebug("Releasing lock after '{message}' appended.", message);
                 _semaphoreSlim.Release();
             }
         }
@@ -39,7 +39,7 @@ namespace Common
         {
             try
             {
-                _logger.LogDebug("Waiting message {message} to insert at {index}.", message, messageIndex);
+                _logger.LogDebug("Waiting message '{message}' to insert at '{index}' index.", message, messageIndex);
                 await _semaphoreSlim.WaitAsync();
                 if (_messages.Count == messageIndex)
                     _messages.Add(message);
@@ -48,11 +48,11 @@ namespace Common
                     EnsureSize(messageIndex);
                     _messages[messageIndex] = message;
                 }
-                _logger.LogInformation("Message {message} inserted at {index}.", message, messageIndex);
+                _logger.LogInformation("Message '{message}' inserted at '{index}' index.", message, messageIndex);
             }
             finally 
             {
-                _logger.LogDebug("Releasing lock after {message} insert at {index}.", message, messageIndex);
+                _logger.LogDebug("Releasing lock after message '{message}' inserted at '{index}' index.", message, messageIndex);
                 _semaphoreSlim.Release();
             }            
         }
@@ -68,11 +68,11 @@ namespace Common
                     var message = _messages[i];
                     if (string.IsNullOrEmpty(message))
                     {
-                        _logger.LogWarning("Size {size}. Missing element at {index}.", _messages.Count, i);
+                        _logger.LogWarning("Size '{size}'. Missing element at '{index}' index.", _messages.Count, i);
                         yield break;
                     }
 
-                    _logger.LogDebug("Reading {message} at {index}.", message, i);
+                    _logger.LogDebug("Reading message '{message}' at '{index}' index.", message, i);
                     yield return message;
                 }
             }
@@ -90,7 +90,7 @@ namespace Common
             while (messageIndex > GetLastIndex())
             {
                 _messages.Add(default);
-                _logger.LogWarning("Resizing to {size}.", _messages.Count);
+                _logger.LogWarning("Resizing to '{size}'.", _messages.Count);
             }
         }
 
