@@ -27,13 +27,13 @@ namespace Master.Controllers
         }
 
         [HttpPost]
-        public async Task<ActionResult> Post([FromForm] string message, [FromForm] int writeConcern)
+        public async Task<ActionResult> Post([FromForm] string message, [FromForm] int writeConcern, [FromForm] int broadcastDelay)
         {
             if (writeConcern < 0)
                 return BadRequest("Invalid write concern. Write concern should be greater than 0.");
 
             _logger.LogInformation("START MESSAGE '{message}' BROADCAST. Write concern '{writeConcern}'.", message, writeConcern);            
-            await _messageBroadcastService.BroadcastMessageAsync(message, writeConcern);
+            await _messageBroadcastService.BroadcastMessageAsync(message, writeConcern, broadcastDelay);
             _logger.LogInformation("END MESSAGE '{message}' BROADCAST.", message);
 
             return StatusCode((int)HttpStatusCode.Created);

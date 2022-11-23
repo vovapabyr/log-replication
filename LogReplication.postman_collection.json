@@ -20,7 +20,12 @@
 						},
 						{
 							"key": "writeConcern",
-							"value": "3",
+							"value": "4",
+							"type": "default"
+						},
+						{
+							"key": "broadcastDelay",
+							"value": "30000",
 							"type": "default"
 						}
 					]
@@ -108,6 +113,45 @@
 						"localhost"
 					],
 					"port": "51984",
+					"path": [
+						"messages"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Master Post 1",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "urlencoded",
+					"urlencoded": [
+						{
+							"key": "message",
+							"value": "m2",
+							"type": "default"
+						},
+						{
+							"key": "writeConcern",
+							"value": "3",
+							"type": "default"
+						},
+						{
+							"key": "broadcastDelay",
+							"value": "0",
+							"type": "default"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://localhost:51978/messages",
+					"protocol": "https",
+					"host": [
+						"localhost"
+					],
+					"port": "51978",
 					"path": [
 						"messages"
 					]

@@ -22,8 +22,16 @@ namespace Master.Services
         }
 
 
-        public async Task BroadcastMessageAsync(string message, int writeConcern)
-        {                     
+        public async Task BroadcastMessageAsync(string message, int writeConcern, int broadcastDelay)
+        {
+            var nextMessageIndex = _messageStore.GetNextMessageIndex();
+            _logger.LogInformation("TOTAL ORDER OF MESSAGE '{message}' IS '{index}'.", message, nextMessageIndex);
+            if (broadcastDelay > 0)
+            {
+                _logger.LogInformation("Delaying message broadcast to '{delay}' ms.", broadcastDelay);
+                Thread.Sleep(broadcastDelay);
+            }
+
             var isValidWriteConcern = writeConcern <= _secondaries.Length + 1; // secondaries + master
             if (!isValidWriteConcern) 
             {
@@ -33,8 +41,7 @@ namespace Master.Services
 
             var cde = new CountdownEvent(writeConcern);
             try 
-            {
-                var nextMessageIndex = _messageStore.GetNextMessageIndex();
+            {               
                 _ = Task.Run(() => 
                 {
                     if (_masterWriteDelay > 0)
