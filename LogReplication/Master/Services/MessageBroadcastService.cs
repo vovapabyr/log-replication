@@ -34,7 +34,7 @@ namespace Master.Services
             var cde = new CountdownEvent(writeConcern);
             try 
             {
-                var nextMessageIndex = await _messageStore.GetNextIndexAsync();
+                var nextMessageIndex = _messageStore.GetNextMessageIndex();
                 _ = Task.Run(() => 
                 {
                     if (_masterWriteDelay > 0)

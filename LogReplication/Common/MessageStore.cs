@@ -7,6 +7,8 @@ namespace Common
 {
     public class MessageStore 
     {
+        private volatile int _messageCounter = -1;
+
         private readonly List<string> _messages = new List<string>(100);
 
         private readonly SemaphoreSlim _semaphoreSlim = new SemaphoreSlim(1, 1); 
@@ -16,23 +18,6 @@ namespace Common
         public MessageStore(ILogger<MessageStore> logger)
         {
             _logger = logger;
-        }
-
-        public async Task<int> AddMessageAsync(string message)
-        {
-            try 
-            {
-                _logger.LogDebug("Waiting message '{message}' to append.", message);
-                await _semaphoreSlim.WaitAsync();
-                _messages.Add(message);
-                _logger.LogInformation("Message '{message}' is appended.", message);
-                return GetLastIndex();
-            }
-            finally 
-            {
-                _logger.LogDebug("Releasing lock after '{message}' appended.", message);
-                _semaphoreSlim.Release();
-            }
         }
 
         public async Task InsertMessageAsync(int messageIndex, string message)
@@ -83,31 +68,23 @@ namespace Common
             }
         }
 
-        public async Task<int> GetNextIndexAsync() 
+        public int GetNextMessageIndex() 
         {
-            try
-            {
-                await _semaphoreSlim.WaitAsync();
-                return _messages.Count;
-            }
-            finally 
-            {
-                _semaphoreSlim.Release();
-            }
+            var index = Interlocked.Increment(ref _messageCounter);
+            _logger.LogDebug("Claimed next message index '{index}'.", index);
+            return index;
         }
 
         #region private
 
         private void EnsureSize(int messageIndex)
         {
-            while (messageIndex > GetLastIndex())
+            while (messageIndex > _messages.Count - 1)
             {
                 _messages.Add(default);
                 _logger.LogWarning("Resizing to '{size}'.", _messages.Count);
             }
         }
-
-        private int GetLastIndex() => _messages.Count - 1;
 
         #endregion
     }
