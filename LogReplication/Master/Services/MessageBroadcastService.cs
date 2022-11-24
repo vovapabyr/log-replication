@@ -39,23 +39,31 @@ namespace Master.Services
                 writeConcern = 0;
             }
 
-            var cde = new CountdownEvent(writeConcern);
+            // Number of secondaries to wait with the help of cde. Master is awaited separately.
+            var secondariesToWaitCount = writeConcern > 0 ? writeConcern - 1 : writeConcern;
+            // Always wait master when writeConcern > 0;
+            var waitMaster = writeConcern > 0;
+
+            var cde = new CountdownEvent(secondariesToWaitCount);
             try 
             {               
-                _ = Task.Run(() => 
+                var masterTask = Task.Run(async () => 
                 {
                     if (_masterWriteDelay > 0)
                     {
                         _logger.LogInformation("Delaying message write to '{delay}' ms.", _masterWriteDelay);
                         Thread.Sleep(_masterWriteDelay);
                     }
-                    _messageStore.InsertMessageAsync(nextMessageIndex, message).ContinueWithCDESignal(message, cde, "master", _logger);
+                    await _messageStore.InsertMessageAsync(nextMessageIndex, message);
                 });
                 foreach (var (secName, secClient) in GetSecondariesClients())
                 {
                     _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);
                     _ = secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).ResponseAsync.ContinueWithCDESignal(message, cde, secName, _logger);
                 }
+
+                if(waitMaster)
+                    await masterTask;
 
                 await Task.Run(() => cde.Wait());
             }
