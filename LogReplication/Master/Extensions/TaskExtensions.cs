@@ -2,7 +2,7 @@
 
 namespace Master.Extensions
 {
-    public static class TaskExtensions
+    internal static class TaskExtensions
     {
         public static Task ContinueWithCDESignal(this Task task, string message, CountdownEvent cde, string nodeName, ILogger<MessageBroadcastService> logger)
         {

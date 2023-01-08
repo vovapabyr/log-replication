@@ -1,6 +1,9 @@
 ﻿using Common;
+using Grpc.Core;
 using Grpc.Net.ClientFactory;
 using Master.Extensions;
+using Polly;
+using Polly.Registry;
 
 namespace Master.Services
 {
@@ -10,14 +13,16 @@ namespace Master.Services
         private readonly GrpcClientFactory _grpcClientFactory;
         private string[] _secondaries;
         private readonly int _masterWriteDelay;
+        private readonly IReadOnlyPolicyRegistry<string> _policyRegistry;
         private readonly ILogger<MessageBroadcastService> _logger;
 
-        public MessageBroadcastService(MessageStore messageStore, GrpcClientFactory grpcClientFactory, IConfiguration configuration, ILogger<MessageBroadcastService> logger)
+        public MessageBroadcastService(MessageStore messageStore, GrpcClientFactory grpcClientFactory, IConfiguration configuration, IReadOnlyPolicyRegistry<string> policyRegistry, ILogger<MessageBroadcastService> logger)
         {
             _messageStore = messageStore;
             _grpcClientFactory = grpcClientFactory;
             _secondaries = configuration.GetSection("Secondaries").Get<string[]>();
             _masterWriteDelay = configuration.GetSection("WriteDelay").Get<int>();
+            _policyRegistry = policyRegistry;
             _logger = logger;
         }
 
@@ -46,7 +51,8 @@ namespace Master.Services
 
             var cde = new CountdownEvent(secondariesToWaitCount);
             try 
-            {               
+            {
+                var retryPolicy = _policyRegistry.Get<IAsyncPolicy<StatusCode>>(PollyConstants.RetryPolicyKey);
                 var masterTask = Task.Run(async () => 
                 {
                     if (_masterWriteDelay > 0)
@@ -59,7 +65,10 @@ namespace Master.Services
                 foreach (var (secName, secClient) in GetSecondariesClients())
                 {
                     _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);
-                    _ = secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).ResponseAsync.ContinueWithCDESignal(message, cde, secName, _logger);
+                    _ = retryPolicy.ExecuteAsync((ctx) => secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).WaitForStatusAsync(_logger), new Dictionary<string, object>() 
+                    {
+                        { PollyConstants.LoggerKey, _logger }
+                    }).ContinueWithCDESignal(message, cde, secName, _logger);
                 }
 
                 if(waitMaster)
