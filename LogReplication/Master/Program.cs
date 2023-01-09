@@ -5,10 +5,9 @@ using Master.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddSingleton<MessageStore>();
 builder.Services.AddSingleton<MessageBroadcastService>();
-builder.Services.ConfigurePollyPolicies();
+builder.Services.ConfigurePollyPolicies(builder.Configuration);
 builder.Services.AddControllers();
 
 var secondaries = builder.Configuration.GetSection("Secondaries").Get<string[]>();
