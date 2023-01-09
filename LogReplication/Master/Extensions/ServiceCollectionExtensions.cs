@@ -1,5 +1,6 @@
 ﻿using Grpc.Core;
 using Polly;
+using Polly.CircuitBreaker;
 using Polly.Registry;
 
 namespace Master.Extensions
@@ -20,7 +21,9 @@ namespace Master.Extensions
         {
             PolicyRegistry registry = new PolicyRegistry()
             {
-                { PollyConstants.RetryPolicyKey,  RetryPolicy}
+                { PollyConstants.RetryPolicyKey,  RetryPolicy},
+                { PollyConstants.CircuitBreakerPolicyKey,  CircuitBreakerPolicy},
+                { PollyConstants.BasicResiliencePolicyKey,  Policy.WrapAsync(RetryPolicy, CircuitBreakerPolicy) }
             };
 
             return services.AddSingleton<IReadOnlyPolicyRegistry<string>>(registry);
@@ -31,13 +34,41 @@ namespace Master.Extensions
             get
             {
                 return Policy.HandleResult<StatusCode>(r => _gRpcErrors.Contains(r))
+                    .Or<BrokenCircuitException>()
                     .WaitAndRetryForeverAsync((retryAttempt, context) => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)), (statusCodeResut, retryAttempt, timeSpan, context) =>
                     {
                         if (!context.TryGetLogger(out var logger))
                             return;
 
-                        logger.LogDebug("Request failed with '{statusCode}'. '{timeSpan}' seconds to wait before next '{retryAttempt}' retry.", statusCodeResut.Result, timeSpan, retryAttempt);
+                        if (statusCodeResut.Exception != null)
+                            logger.LogWarning("{exception} '{timeSpan}' seconds to wait before next '{retryAttempt}' retry.", statusCodeResut.Exception.Message, timeSpan, retryAttempt);
+                        else
+                            logger.LogWarning("Request failed with '{statusCode}'. '{timeSpan}' seconds to wait before next '{retryAttempt}' retry.", statusCodeResut.Result, timeSpan, retryAttempt);
                     });
+            }
+        }
+
+        private static IAsyncPolicy<StatusCode> CircuitBreakerPolicy
+        {
+            get
+            {
+                return Policy.HandleResult<StatusCode>(r => _gRpcErrors.Contains(r))
+                    .CircuitBreakerAsync(2, TimeSpan.FromMinutes(2),
+                        onBreak: (statusCodeResult, breakDuration, context) => 
+                        {
+                            if (!context.TryGetLogger(out var logger))
+                                return;
+
+                            logger.LogWarning("Circuit breaker breaks for {breakDuration} with '{statusCode}'.", breakDuration, statusCodeResult.Result);
+                        },
+                        onReset: (context) => 
+                        {
+                            if (!context.TryGetLogger(out var logger))
+                                return;
+
+                            logger.LogDebug("Circuit breaker reset.");
+                        }
+                    );
             }
         }
     }

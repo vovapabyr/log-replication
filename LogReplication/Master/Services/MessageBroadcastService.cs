@@ -52,7 +52,7 @@ namespace Master.Services
             var cde = new CountdownEvent(secondariesToWaitCount);
             try 
             {
-                var retryPolicy = _policyRegistry.Get<IAsyncPolicy<StatusCode>>(PollyConstants.RetryPolicyKey);
+                var retryPolicy = _policyRegistry.Get<IAsyncPolicy<StatusCode>>(PollyConstants.BasicResiliencePolicyKey);
                 var masterTask = Task.Run(async () => 
                 {
                     if (_masterWriteDelay > 0)
@@ -65,10 +65,11 @@ namespace Master.Services
                 foreach (var (secName, secClient) in GetSecondariesClients())
                 {
                     _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);
-                    _ = retryPolicy.ExecuteAsync((ctx) => secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).WaitForStatusAsync(_logger), new Dictionary<string, object>() 
-                    {
-                        { PollyConstants.LoggerKey, _logger }
-                    }).ContinueWithCDESignal(message, cde, secName, _logger);
+                    _ = retryPolicy.ExecuteAsync((ctx) => secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).WaitForStatusAsync(_logger),
+                        new Dictionary<string, object>() 
+                        {
+                            { PollyConstants.LoggerKey, _logger }
+                        }).ContinueWithCDESignal(message, cde, secName, _logger);
                 }
 
                 if(waitMaster)
