@@ -1,6 +1,6 @@
 {
 	"info": {
-		"_postman_id": "def9b1dd-4da9-4c69-a153-cb0e1b03b312",
+		"_postman_id": "c7db96d3-d066-4fe6-946e-3ae621ced64d",
 		"name": "LogReplication",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
@@ -156,6 +156,14 @@
 						"messages"
 					]
 				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Secondaries Health",
+			"request": {
+				"method": "GET",
+				"header": []
 			},
 			"response": []
 		}

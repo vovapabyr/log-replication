@@ -1,4 +1,6 @@
 using Common;
+using HealthChecks.UI.Client;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,7 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddSingleton<MessageStore>();
 builder.Services.AddControllers();
 builder.Services.AddGrpc();
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -14,8 +17,16 @@ var app = builder.Build();
 
 app.UseHttpsRedirection();
 
-app.UseAuthorization();
+app.UseRouting();
 
+app.UseEndpoints(endpoints =>
+{
+    endpoints.MapHealthChecks("/hc", new HealthCheckOptions() 
+    {
+        Predicate = _ => true,
+        ResponseWriter = UIResponseWriter.WriteHealthCheckUIResponse
+    });
+});
 app.MapControllers();
 app.MapGrpcService<Secondary.Services.MessageService>();
 

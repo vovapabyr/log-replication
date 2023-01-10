@@ -1,4 +1,7 @@
-﻿using Grpc.Core;
+﻿using Common;
+using Grpc.Core;
+using HealthChecks.UI.Core;
+using Newtonsoft.Json;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Registry;
@@ -18,7 +21,7 @@ namespace Master.Extensions
             StatusCode.Unknown
         };
 
-        public static IServiceCollection ConfigurePollyPolicies(this IServiceCollection services, IConfiguration configuration)
+        public static IServiceCollection ConfigureResiliencePolicies(this IServiceCollection services, IConfiguration configuration)
         {
             var secondaryCallTimeout = configuration.GetSection("SecondaryCallTimeout").Get<int>();
             PolicyRegistry registry = new PolicyRegistry()
@@ -29,6 +32,54 @@ namespace Master.Extensions
             };
 
             return services.AddSingleton<IReadOnlyPolicyRegistry<string>>(registry);
+        }
+
+        public static IServiceCollection ConfigureHealthChecksUI(this IServiceCollection services, IConfiguration configuration)
+        {
+            var secondaries = configuration.GetSection("Secondaries").Get<string[]>();
+            services.AddHealthChecksUI(settings =>
+            {
+                // Register health checks to secondaries.
+                foreach (var sec in secondaries)
+                {
+                    settings.AddHealthCheckEndpoint(sec, $"https://{sec}:443/hc");
+                }
+
+                settings.UseApiEndpointHttpMessageHandler(s => new HttpClientHandler() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator });
+                // Set secondary health check timeout to 2 sec.
+                settings.ConfigureApiEndpointHttpclient((s, h) => h.Timeout = TimeSpan.FromSeconds(2));
+                // Check secondary health every 3 sec.
+                settings.SetEvaluationTimeInSeconds(3);
+
+                // Configure web hook to notify health status change to control secondaries resilience policies.
+                settings.AddWebhookNotification("Master Resilience Policy Control",
+                    uri: "https://master:443/policy",
+                    payload: JsonConvert.SerializeObject(new { Name = "[[LIVENESS]]", Status = "[[FAILURE]]", Descriptions = "[[DESCRIPTIONS]]" }),
+                    restorePayload: JsonConvert.SerializeObject(new { Name = "[[LIVENESS]]", Status = UIHealthStatus.Healthy.ToString(), Descriptions = "[[LIVENESS]] is healthy again." }),
+                    customMessageFunc: (livenessName, report) => report.Status.ToString(),
+                    customDescriptionFunc: (livenessName, report) => report.Entries.First().Value.Description);
+
+                settings.UseWebhookEndpointHttpMessageHandler(s => new HttpClientHandler() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator });
+            }).AddInMemoryStorage();
+
+            return services;
+        }
+
+        public static IServiceCollection ConfigureGrpcClients(this IServiceCollection services, IConfiguration configuration)
+        {
+            var secondaries = configuration.GetSection("Secondaries").Get<string[]>();
+            foreach (var sec in secondaries)
+            {
+                services.AddGrpcClient<MessageService.MessageServiceClient>(sec, o =>
+                {
+                    o.Address = new Uri($"https://{sec}:443");
+                }).ConfigureChannel(c =>
+                {
+                    c.HttpHandler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator };
+                });
+            }
+
+            return services;
         }
 
         private static IAsyncPolicy<StatusCode> RetryPolicy

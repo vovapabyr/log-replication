@@ -7,27 +7,21 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddSingleton<MessageStore>();
 builder.Services.AddSingleton<MessageBroadcastService>();
-builder.Services.ConfigurePollyPolicies(builder.Configuration);
+builder.Services.ConfigureGrpcClients(builder.Configuration);
+builder.Services.ConfigureResiliencePolicies(builder.Configuration);
+builder.Services.ConfigureHealthChecksUI(builder.Configuration);
 builder.Services.AddControllers();
-
-var secondaries = builder.Configuration.GetSection("Secondaries").Get<string[]>();
-foreach (var sec in secondaries)
-{
-    builder.Services.AddGrpcClient<MessageService.MessageServiceClient>(sec, o =>
-    {
-        o.Address = new Uri($"https://{sec}:443");
-    }).ConfigureChannel(c =>
-    {
-        c.HttpHandler = new HttpClientHandler() { ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator };
-    });
-}
 
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
 
 app.UseHttpsRedirection();
-
+app.UseHealthChecksUI(config => 
+{
+    config.UIPath = "/hc-ui";
+    config.ApiPath = "/hc-api";
+});
 app.MapControllers();
 
 app.Run();
