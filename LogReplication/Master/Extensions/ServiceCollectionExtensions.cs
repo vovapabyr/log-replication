@@ -107,7 +107,7 @@ namespace Master.Extensions
             {
                 return Policy.HandleResult<StatusCode>(r => _gRpcErrors.Contains(r))
                     .Or<TimeoutRejectedException>()
-                    .CircuitBreakerAsync(2, TimeSpan.FromMinutes(2),
+                    .CircuitBreakerAsync(int.MaxValue, TimeSpan.MaxValue,
                         onBreak: (statusCodeResult, breakDuration, context) => 
                         {
                             if (!context.TryGetLogger(out var logger))

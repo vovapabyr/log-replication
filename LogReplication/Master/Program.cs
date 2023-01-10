@@ -7,6 +7,7 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddSingleton<MessageStore>();
 builder.Services.AddSingleton<MessageBroadcastService>();
+builder.Services.AddSingleton<ResiliencePolicyManager>();
 builder.Services.ConfigureGrpcClients(builder.Configuration);
 builder.Services.ConfigureResiliencePolicies(builder.Configuration);
 builder.Services.ConfigureHealthChecksUI(builder.Configuration);

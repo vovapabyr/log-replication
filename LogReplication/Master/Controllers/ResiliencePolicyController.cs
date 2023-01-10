@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System.Net;
 using Master.Models;
+using Master.Services;
 
 namespace Master.Controllers
 {
@@ -8,18 +8,19 @@ namespace Master.Controllers
     [ApiController]
     public class ResiliencePolicyController : ControllerBase
     {
+        private readonly ResiliencePolicyManager _policyManager;
         private readonly ILogger<ResiliencePolicyController> _logger;
 
-        public ResiliencePolicyController(ILogger<ResiliencePolicyController> logger)
+        public ResiliencePolicyController(ResiliencePolicyManager policyManager, ILogger<ResiliencePolicyController> logger)
         {
+            _policyManager = policyManager;
             _logger = logger;
         }
 
         [HttpPost]
         public ActionResult UpdateSecondaryPolicy(HealthCheckPayload payload)
         {
-            // TODO Open circuit breaker policy for secondary.
-            _logger.LogInformation("Updating secondary '{secondary}' status to '{status}'", payload.Name, payload.Status);
+            _policyManager.UpdateSecondaryCircuitBreaker(payload.Name, payload.GetStatus());
             return NoContent();
         }
     }
