@@ -52,7 +52,6 @@ namespace Master.Services
             var cde = new CountdownEvent(secondariesToWaitCount);
             try 
             {
-                var retryPolicy = _policyRegistry.Get<IAsyncPolicy<StatusCode>>(PollyConstants.BasicResiliencePolicyKey);
                 var masterTask = Task.Run(async () => 
                 {
                     if (_masterWriteDelay > 0)
@@ -64,8 +63,9 @@ namespace Master.Services
                 });
                 foreach (var (secName, secClient) in GetSecondariesClients())
                 {
+                    var resiliencePolicy = _policyRegistry.Get<IAsyncPolicy<StatusCode>>(PollyConstants.GetSecondaryResiliencePolicyKey(secName));
                     _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);
-                    _ = retryPolicy.ExecuteAsync((ctx) => secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).WaitForStatusAsync(_logger),
+                    _ = resiliencePolicy.ExecuteAsync((ctx) => secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).WaitForStatusAsync(_logger),
                         new Dictionary<string, object>() 
                         {
                             { PollyConstants.LoggerKey, _logger }

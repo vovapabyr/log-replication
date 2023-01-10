@@ -24,12 +24,11 @@ namespace Master.Extensions
         public static IServiceCollection ConfigureResiliencePolicies(this IServiceCollection services, IConfiguration configuration)
         {
             var secondaryCallTimeout = configuration.GetSection("SecondaryCallTimeout").Get<int>();
-            PolicyRegistry registry = new PolicyRegistry()
-            {
-                { PollyConstants.RetryPolicyKey, RetryPolicy},
-                { PollyConstants.CircuitBreakerPolicyKey, CircuitBreakerPolicy},
-                { PollyConstants.BasicResiliencePolicyKey, Policy.WrapAsync(RetryPolicy, CircuitBreakerPolicy, TimeoutPolicy(secondaryCallTimeout)) }
-            };
+            var secondaries = configuration.GetSection("Secondaries").Get<string[]>();
+            PolicyRegistry registry = new PolicyRegistry();
+            // Need to add resilience policy for each secondary separately, as circuit breaker breaks individually for each secondary.
+            foreach (var sec in secondaries)
+                registry.Add(PollyConstants.GetSecondaryResiliencePolicyKey(sec), Policy.WrapAsync(RetryPolicy, CircuitBreakerPolicy, TimeoutPolicy(secondaryCallTimeout)));
 
             return services.AddSingleton<IReadOnlyPolicyRegistry<string>>(registry);
         }
