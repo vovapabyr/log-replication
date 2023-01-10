@@ -65,11 +65,11 @@ namespace Master.Services
                 {
                     var resiliencePolicy = _policyRegistry.Get<IAsyncPolicy<StatusCode>>(PollyConstants.GetSecondaryResiliencePolicyKey(secName));
                     _logger.LogInformation("Sending message '{message}' to '{secondary}' secondary.", message, secName);
-                    _ = resiliencePolicy.ExecuteAsync((ctx) => secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).WaitForStatusAsync(_logger),
-                        new Dictionary<string, object>() 
+                    _ = resiliencePolicy.ExecuteAsync((ctx) => secClient.InsertMessageAsync(new Message() { Index = nextMessageIndex, Value = message }).WaitForStatusAsync(_logger), new Context($"Adding message {message} to {secName}", 
+                        new Dictionary<string, object>()
                         {
                             { PollyConstants.LoggerKey, _logger }
-                        }).ContinueWithCDESignal(message, cde, secName, _logger);
+                        })).ContinueWithCDESignal(message, cde, secName, _logger);
                 }
 
                 if(waitMaster)

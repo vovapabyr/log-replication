@@ -94,9 +94,9 @@ namespace Master.Extensions
                             return;
 
                         if (statusCodeResult.Exception != null)
-                            logger.LogWarning("{exception} '{timeSpan}' seconds to wait before next '{retryAttempt}' retry.", statusCodeResult.Exception.Message, timeSpan, retryAttempt);
+                            logger.LogWarning("{operation}. {exception} '{timeSpan}' seconds to wait before next '{retryAttempt}' retry.", context.OperationKey, statusCodeResult.Exception.Message, timeSpan, retryAttempt);
                         else
-                            logger.LogWarning("Request failed with '{statusCode}'. '{timeSpan}' seconds to wait before next '{retryAttempt}' retry.", statusCodeResult.Result, timeSpan, retryAttempt);
+                            logger.LogWarning("{operation}. Request failed with '{statusCode}'. '{timeSpan}' seconds to wait before next '{retryAttempt}' retry.", context.OperationKey, statusCodeResult.Result, timeSpan, retryAttempt);
                     });
             }
         }
@@ -114,9 +114,9 @@ namespace Master.Extensions
                                 return;
 
                             if (statusCodeResult.Exception != null)
-                                logger.LogWarning("{exception} Circuit breaker breaks for {breakDuration}.", statusCodeResult.Exception.Message, breakDuration);
+                                logger.LogWarning("{operation}. {exception} Circuit breaker breaks for {breakDuration}.", context.OperationKey, statusCodeResult.Exception.Message, breakDuration);
                             else
-                                logger.LogWarning("Circuit breaker breaks for {breakDuration} with '{statusCode}'.", breakDuration, statusCodeResult.Result);
+                                logger.LogWarning("{operation}. Circuit breaker breaks for {breakDuration} with '{statusCode}'.", context.OperationKey, breakDuration, statusCodeResult.Result);
                         },
                         onReset: (context) => 
                         {
