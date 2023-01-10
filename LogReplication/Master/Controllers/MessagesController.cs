@@ -11,12 +11,14 @@ namespace Master.Controllers
     {
         private readonly MessageStore _messageStore;
         private readonly MessageBroadcastService _messageBroadcastService;
+        private readonly ResiliencePolicyManager _policyManager;
         private readonly ILogger<MessagesController> _logger;
 
-        public MessagesController(MessageStore messageStore, MessageBroadcastService messageBroadcastService, ILogger<MessagesController> logger)
+        public MessagesController(MessageStore messageStore, MessageBroadcastService messageBroadcastService, ResiliencePolicyManager policyManager, ILogger<MessagesController> logger)
         {
             _messageStore = messageStore;
             _messageBroadcastService = messageBroadcastService;
+            _policyManager = policyManager;
             _logger = logger;
         }
 
@@ -30,7 +32,10 @@ namespace Master.Controllers
         public async Task<ActionResult> Post([FromForm] string message, [FromForm] int writeConcern, [FromForm] int broadcastDelay)
         {
             if (writeConcern < 0)
-                return BadRequest("Invalid write concern. Write concern should be greater than 0.");
+                return BadRequest("Invalid write concern. Write concern should be greater equal than 0.");
+
+            if (_policyManager.IsReadOnlyMode)
+                return BadRequest("Master is in read only mode, because quorum is not reached.");
 
             _logger.LogInformation("START MESSAGE '{message}' BROADCAST. Write concern '{writeConcern}'.", message, writeConcern);            
             await _messageBroadcastService.BroadcastMessageAsync(message, writeConcern, broadcastDelay);
